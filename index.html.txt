@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plan Maestro: Super Cerebro Zaid</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #F0F9FF;
+            background-image: radial-gradient(#bae6fd 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        h1, h2, h3, .font-title {
+            font-family: 'Fredoka', sans-serif;
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+        .nav-active {
+            background-color: #ffffff;
+            color: #2563EB;
+            font-weight: bold;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #93C5FD; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #60A5FA; 
+        }
+        
+        .check-anim:checked + div {
+            background-color: #10B981;
+            border-color: #10B981;
+        }
+        .check-anim:checked + div svg {
+            display: block;
+        }
+
+        .details-content {
+            transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+        }
+        .details-open {
+            max-height: 1000px;
+            opacity: 1;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        .highlight-pulse {
+            animation: pulse-orange 2s infinite;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes pulse-orange {
+            0% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(249, 115, 22, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0); }
+        }
+    </style>
+</head>
+<body class="text-slate-700 pb-24 md:pb-0">
+
+    <!-- Header -->
+    <header class="bg-blue-600 text-white p-3 md:p-4 sticky top-0 z-50 shadow-lg">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-2 md:gap-3">
+                <div class="bg-yellow-400 p-2 rounded-full text-blue-900 text-lg md:text-xl shadow-md">
+                    <i class="fa-solid fa-brain"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg md:text-2xl font-bold leading-tight">Misión: Zaid</h1>
+                    <div class="flex items-center gap-2 text-xs md:text-sm text-blue-100">
+                        <span>Gimnasio Cerebral</span>
+                        <span class="bg-blue-800 px-2 py-0.5 rounded-full border border-blue-400" id="level-badge">🏆 Nivel 1</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex gap-2">
+                <!-- Botón Reiniciar -->
+                <button onclick="resetProgress()" id="btn-reset-week" class="text-xs bg-blue-700 hover:bg-blue-800 px-3 py-1 rounded-lg transition opacity-80 hover:opacity-100 flex items-center h-10">
+                    <i class="fa-solid fa-rotate-right mr-1"></i> <span class="hidden sm:inline">Reiniciar</span>
+                </button>
+
+                <!-- Botón Completar Semana (Siempre visible, cambia de estado) -->
+                <button onclick="finishWeek()" id="btn-finish-week" disabled class="text-xs md:text-sm bg-gray-300 text-gray-500 font-bold px-4 py-2 rounded-lg transition shadow-none border-b-4 border-gray-400 cursor-not-allowed h-10 flex items-center">
+                    <i class="fa-solid fa-lock mr-2"></i> <span>0/7</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="max-w-6xl mx-auto p-4 md:p-6 mb-16">
+
+        <!-- Progress Bar (Visual Reinforcement) -->
+        <div class="mb-6 bg-white rounded-full h-4 w-full shadow-inner overflow-hidden relative">
+            <div id="progress-bar" class="bg-green-500 h-full w-0 transition-all duration-1000 ease-out flex items-center justify-end pr-2"></div>
+        </div>
+
+        <!-- Desktop Navigation Tabs -->
+        <div class="hidden md:flex justify-center flex-wrap gap-3 mb-8">
+            <button onclick="switchTab('cronograma')" id="btn-cronograma" class="nav-btn nav-active px-5 py-3 rounded-xl bg-blue-100 text-blue-600 transition hover:bg-white text-sm font-semibold">
+                <i class="fa-solid fa-calendar-check mr-2"></i> Cronograma
+            </button>
+            <button onclick="switchTab('banco')" id="btn-banco" class="nav-btn px-5 py-3 rounded-xl bg-blue-100 text-blue-600 transition hover:bg-white text-sm font-semibold border-2 border-yellow-400/50">
+                <i class="fa-solid fa-lightbulb mr-2 text-yellow-500"></i> Banco de Ideas
+            </button>
+            <button onclick="switchTab('basales')" id="btn-basales" class="nav-btn px-5 py-3 rounded-xl bg-blue-100 text-blue-600 transition hover:bg-white text-sm font-semibold">
+                <i class="fa-solid fa-hand-fist mr-2"></i> 1. Motor
+            </button>
+            <button onclick="switchTab('semantico')" id="btn-semantico" class="nav-btn px-5 py-3 rounded-xl bg-blue-100 text-blue-600 transition hover:bg-white text-sm font-semibold">
+                <i class="fa-solid fa-book-open-reader mr-2"></i> 2. Palabras
+            </button>
+            <button onclick="switchTab('digital')" id="btn-digital" class="nav-btn px-5 py-3 rounded-xl bg-blue-100 text-blue-600 transition hover:bg-white text-sm font-semibold">
+                <i class="fa-solid fa-laptop-code mr-2"></i> 3. Digital
+            </button>
+        </div>
+
+        <!-- SECTIONS -->
+
+        <!-- SECTION: CRONOGRAMA (Default) -->
+        <section id="cronograma" class="tab-content block animate-fade-in">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-2xl font-bold text-slate-800">📅 Tu Plan Semanal</h3>
+                <span class="text-sm bg-green-100 text-green-700 px-3 py-1 rounded-full font-bold shadow-sm border border-green-200" id="progress-text">0/7 Días</span>
+            </div>
+
+            <!-- Schedule Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="schedule-container">
+                <!-- JS will inject cards here -->
+            </div>
+            
+            <div class="mt-8 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-xl shadow-sm">
+                <h4 class="font-bold text-yellow-800 mb-1"><i class="fa-solid fa-lightbulb mr-2"></i>¿Cómo funciona el Nivel?</h4>
+                <p class="text-sm text-yellow-800">
+                    Este cronograma es tu <strong>esqueleto</strong>. Completa los 7 días para desbloquear el botón dorado de arriba y subir de Nivel.
+                </p>
+            </div>
+        </section>
+
+        <!-- SECTION: BANCO DE IDEAS -->
+        <section id="banco" class="tab-content hidden">
+            <div class="mb-6 bg-yellow-100 p-6 rounded-3xl border border-yellow-200 shadow-sm relative overflow-hidden">
+                <div class="relative z-10">
+                    <h3 class="text-2xl font-bold text-yellow-700 mb-2">📚 Banco de Ideas Infinito</h3>
+                    <p class="text-yellow-800">¿Zaid se aburrió de la actividad de hoy? Usa estas variantes para entrenar la misma habilidad de forma fresca.</p>
+                </div>
+                <i class="fa-solid fa-lightbulb absolute -right-4 -bottom-4 text-8xl text-yellow-500/20 rotate-12"></i>
+            </div>
+
+            <div class="space-y-6">
+                
+                <!-- Category: Motricidad (Target ID for jumping) -->
+                <div id="target-motor" class="bg-white rounded-2xl shadow-sm border border-orange-100 overflow-hidden transition-all duration-500">
+                    <div class="bg-orange-50 p-4 border-b border-orange-100 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="bg-orange-500 text-white w-10 h-10 rounded-full flex items-center justify-center text-xl"><i class="fa-solid fa-hand-scissors"></i></div>
+                            <div>
+                                <h4 class="font-bold text-lg text-orange-800">Mega-Guía: Motricidad Fina</h4>
+                                <p class="text-xs text-orange-600">50 Actividades: Pinza, Coordinación y Precisión</p>
+                            </div>
+                        </div>
+                        <button onclick="toggleTheory()" class="text-xs bg-white text-orange-600 border border-orange-200 px-3 py-1 rounded-full hover:bg-orange-50 transition">
+                            <i class="fa-solid fa-book-open mr-1"></i> Ver Teoría
+                        </button>
+                    </div>
+
+                    <!-- Theoretical Content -->
+                    <div id="motor-theory" class="hidden bg-orange-50/50 p-6 border-b border-orange-100 text-sm text-slate-700 leading-relaxed">
+                        <div class="mb-4 bg-white p-4 rounded-lg border border-orange-200 shadow-sm">
+                             <h5 class="font-bold text-orange-800 mb-2"><i class="fa-solid fa-music mr-2"></i>La Metáfora de Solidificación (El Músico)</h5>
+                             <p class="mb-2 italic">"Piensa en la Motricidad Fina y la Lectoescritura como el entrenamiento de un músico."</p>
+                             <ul class="list-disc list-inside space-y-1 ml-2">
+                                <li><strong>Motricidad Fina (Paso 1):</strong> Ejercicios de dedos. Dan control físico del instrumento.</li>
+                                <li><strong>Lectoescritura (Paso 2):</strong> Tocar las canciones. El cerebro se enfoca en la melodía (significado) porque los dedos ya saben qué hacer.</li>
+                             </ul>
+                        </div>
+                    </div>
+
+                    <!-- Search and List -->
+                    <div class="p-4 bg-slate-50">
+                        <div class="relative mb-4">
+                            <input type="text" id="motor-search" onkeyup="filterMotorActivities()" placeholder="Buscar actividad (ej: plastilina, papel, tijeras)..." class="w-full p-3 pl-10 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-300 text-sm">
+                            <i class="fa-solid fa-search absolute left-4 top-3.5 text-slate-400"></i>
+                        </div>
+                        
+                        <div id="motor-list" class="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-96 overflow-y-auto p-1 custom-scrollbar">
+                            <!-- JS will inject 50 items here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Category: LECTOESCRITURA (Target ID for jumping) -->
+                <div id="target-lecto" class="bg-white rounded-2xl shadow-sm border border-pink-100 overflow-hidden transition-all duration-500">
+                    <div class="bg-pink-50 p-4 border-b border-pink-100 flex items-center gap-3">
+                        <div class="bg-pink-500 text-white w-8 h-8 rounded-full flex items-center justify-center"><i class="fa-solid fa-pen-nib"></i></div>
+                        <h4 class="font-bold text-pink-800">Variantes: Lectoescritura (Paso 2)</h4>
+                    </div>
+                    <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div class="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                            <h5 class="font-bold text-sm text-slate-700">📌 Escritura Funcional</h5>
+                            <p class="text-sm text-slate-600 mt-1">Notas de amor "Te quiero mamá" o lista del súper.</p>
+                        </div>
+                        <div class="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                            <h5 class="font-bold text-sm text-slate-700">📌 Nombrar la Casa</h5>
+                            <p class="text-sm text-slate-600 mt-1">Notas adhesivas en objetos: Mesa, Puerta, TV.</p>
+                        </div>
+                        <div class="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                            <h5 class="font-bold text-sm text-slate-700">📌 Categorías Visuales</h5>
+                            <p class="text-sm text-slate-600 mt-1">Encierra letras en rojo y números en azul en una hoja mixta.</p>
+                        </div>
+                        <div class="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                            <h5 class="font-bold text-sm text-slate-700">📌 Completar Palabras</h5>
+                            <p class="text-sm text-slate-600 mt-1">Dibuja un sol y escribe "S_L". Que complete la vocal.</p>
+                        </div>
+                        <div class="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                            <h5 class="font-bold text-sm text-slate-700">📌 Exploración Táctil</h5>
+                            <p class="text-sm text-slate-600 mt-1">Imanes de letras o fichas de Scrabble. Sin lápiz.</p>
+                        </div>
+                        <div class="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                            <h5 class="font-bold text-sm text-slate-700">📌 Trazo Arcoíris</h5>
+                            <p class="text-sm text-slate-600 mt-1">Repasar la misma línea punteada 3 veces con colores distintos.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Grid for other categories -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Category: Atencion (Target ID) -->
+                    <div id="target-atencion" class="bg-white rounded-2xl shadow-sm border border-purple-100 overflow-hidden transition-all duration-500">
+                        <div class="bg-purple-50 p-4 border-b border-purple-100 flex items-center gap-3">
+                            <div class="bg-purple-500 text-white w-8 h-8 rounded-full flex items-center justify-center"><i class="fa-solid fa-bullseye"></i></div>
+                            <h4 class="font-bold text-purple-800">Variantes: Atención</h4>
+                        </div>
+                        <div class="p-4 space-y-3">
+                            <div class="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                                <h5 class="font-bold text-sm text-slate-700">📌 Simón Dice "Complejo"</h5>
+                                <p class="text-sm text-slate-600 mt-1">3 instrucciones seguidas: "Nariz, vuelta, salta".</p>
+                            </div>
+                            <div class="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                                <h5 class="font-bold text-sm text-slate-700">📌 Encuentra el Intruso</h5>
+                                <p class="text-sm text-slate-600 mt-1">5 cosas de cocina y 1 juguete. ¿Cuál sobra?</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Category: Semantico (Target ID) -->
+                    <div id="target-palabras" class="bg-white rounded-2xl shadow-sm border border-green-100 overflow-hidden transition-all duration-500">
+                        <div class="bg-green-50 p-4 border-b border-green-100 flex items-center gap-3">
+                            <div class="bg-green-500 text-white w-8 h-8 rounded-full flex items-center justify-center"><i class="fa-solid fa-book"></i></div>
+                            <h4 class="font-bold text-green-800">Variantes: Palabras</h4>
+                        </div>
+                        <div class="p-4 space-y-3">
+                            <div class="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                                <h5 class="font-bold text-sm text-slate-700">📌 Sinónimos</h5>
+                                <p class="text-sm text-slate-600 mt-1">"Di 'Grande' sin decir 'Grande'" (Enorme, Gigante).</p>
+                            </div>
+                            <div class="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                                <h5 class="font-bold text-sm text-slate-700">📌 Inventa el Final</h5>
+                                <p class="text-sm text-slate-600 mt-1">Lee un cuento y para antes del final. Que él lo invente.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Category: Digital (Target ID) -->
+                    <div id="target-digital" class="bg-white rounded-2xl shadow-sm border border-indigo-100 overflow-hidden transition-all duration-500">
+                        <div class="bg-indigo-50 p-4 border-b border-indigo-100 flex items-center gap-3">
+                            <div class="bg-indigo-500 text-white w-8 h-8 rounded-full flex items-center justify-center"><i class="fa-solid fa-laptop"></i></div>
+                            <h4 class="font-bold text-indigo-800">Variantes: Digital</h4>
+                        </div>
+                        <div class="p-4 space-y-3">
+                             <div class="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                                <h5 class="font-bold text-sm text-slate-700">📌 La Huella Digital</h5>
+                                <p class="text-sm text-slate-600 mt-1">Internet es cemento fresco: lo que pones se queda.</p>
+                            </div>
+                            <div class="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                                <h5 class="font-bold text-sm text-slate-700">📌 Contraseñas Fuertes</h5>
+                                <p class="text-sm text-slate-600 mt-1">Mezcla comida + numero: "PizzaGato8".</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- SECTIONS BASALES ETC REMAIN FOR REFERENCE BUT HIDDEN FROM MAIN NAV TO SIMPLIFY -->
+        <section id="basales" class="tab-content hidden">
+            <div class="p-6 bg-white rounded-2xl text-center">
+                 <i class="fa-solid fa-hand-fist text-4xl text-orange-500 mb-4"></i>
+                 <h3 class="text-xl font-bold">Sección de Referencia</h3>
+                 <p class="mb-4">Aquí se explica el "Paso 1". Para actividades prácticas, ve al Banco de Ideas.</p>
+                 <button onclick="switchTab('banco')" class="text-blue-600 underline">Ir al Banco de Ideas</button>
+            </div>
+        </section>
+        <section id="semantico" class="tab-content hidden">
+             <div class="p-6 bg-white rounded-2xl text-center">
+                 <i class="fa-solid fa-book-open-reader text-4xl text-green-500 mb-4"></i>
+                 <h3 class="text-xl font-bold">Sección de Referencia</h3>
+                 <p class="mb-4">Aquí se explica el "Paso 2". Para actividades prácticas, ve al Banco de Ideas.</p>
+                 <button onclick="switchTab('banco')" class="text-blue-600 underline">Ir al Banco de Ideas</button>
+            </div>
+        </section>
+        <section id="digital" class="tab-content hidden">
+             <div class="p-6 bg-white rounded-2xl text-center">
+                 <i class="fa-solid fa-laptop-code text-4xl text-indigo-500 mb-4"></i>
+                 <h3 class="text-xl font-bold">Sección de Referencia</h3>
+                 <p class="mb-4">Aquí se explica el "Paso 3". Para actividades prácticas, ve al Banco de Ideas.</p>
+                 <button onclick="switchTab('banco')" class="text-blue-600 underline">Ir al Banco de Ideas</button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Mobile Navigation Bar -->
+    <div class="md:hidden fixed bottom-0 w-full bg-white border-t border-slate-200 flex justify-around p-3 z-50 text-xs shadow-2xl safe-area-pb">
+        <button onclick="switchTab('cronograma')" class="mobile-nav-btn text-blue-600 flex flex-col items-center gap-1 font-bold">
+            <i class="fa-solid fa-calendar-check text-xl"></i> Semana
+        </button>
+        <button onclick="switchTab('banco')" class="mobile-nav-btn text-slate-400 flex flex-col items-center gap-1 font-bold">
+            <i class="fa-solid fa-lightbulb text-xl text-yellow-500"></i> Ideas
+        </button>
+        <button onclick="switchTab('basales')" class="mobile-nav-btn text-slate-400 flex flex-col items-center gap-1">
+            <i class="fa-solid fa-info-circle text-xl"></i> Info
+        </button>
+    </div>
+
+    <script>
+        // --- 50 ACTIVIDADES MOTRICIDAD FINA ---
+        const motorActivities = [
+            "1. Hacer bolitas de papeles de diferentes texturas y grosores.",
+            "2. Cargar objetos haciendo equilibrio con una mano y luego la otra.",
+            "3. Tocar las palmas al ritmo de una canción.",
+            "4. Hacer trazos libres sobre la arena.",
+            "5. Garabateo libre con papel y lápices de colores.",
+            "6. Realizar gestos con las manos acompañando cuentos.",
+            "7. Elaborar collares con cuentas grandes e hilos gruesos.",
+            "8. Mover las dos manos simultáneamente (arriba, abajo, círculos).",
+            "9. Imitar con las manos movimientos de animales.",
+            "10. Abrir una mano mientras se cierra la otra (alternar).",
+            "11. Unir cada dedo de la mano derecha con la izquierda.",
+            "12. Coger objetos pequeños haciendo 'pinza'.",
+            "13. Separar los dedos en abanico.",
+            "14. Meter objetos en una caja con los dedos en pinza.",
+            "15. Juntar y separar los dedos siguiendo instrucciones.",
+            "16. Tocar cada dedo de la mano con el pulgar.",
+            "17. Sacar dedos del puño cerrado uno por uno.",
+            "18. Elevar dedos de la mesa uno por uno.",
+            "19. Destapar y tapar frascos con rosca.",
+            "20. Abrochar y desabrochar botones.",
+            "21. Modelar formas alargadas y circulares con plastilina.",
+            "22. Lanzar objetos (pelota de goma) con una mano y otra.",
+            "23. Manipular semillas pequeñas.",
+            "24. Presionar y aplastar objetos flexibles con la mano.",
+            "25. Soltar arena abriendo la mano poco a poco.",
+            "26. Transportar objetos en la palma de la mano.",
+            "27. Introducir bolas en una bolsa.",
+            "28. Rotar una pelota con la mano.",
+            "29. Rasgar papel libremente.",
+            "30. Enrollar hilo en un carrete.",
+            "31. Pegar bolas de plastilina en el contorno de un dibujo.",
+            "32. Rasgar papel en trozos pequeños.",
+            "33. Rasgar papel en tiras ya empezadas.",
+            "34. Sacar punta al lápiz.",
+            "35. Cortar papel con tijeras (libre, tiras, flecos, líneas).",
+            "36. Amasar plastilina.",
+            "37. Formar aros con churros de plastilina.",
+            "38. Pegar bolas de plastilina (de medianas a pequeñas).",
+            "39. Realizar cadenas con aros de plastilina.",
+            "40. Pintar un tablero con pincel.",
+            "41. Realizar un nudo simple en cuerda.",
+            "42. Realizar tres nudos apretados.",
+            "43. Anudar dos cordones uniéndolos.",
+            "44. Colocar ligas alrededor de un bote (contar o patrones).",
+            "45. Esconder y encontrar canicas dentro de plastilina.",
+            "46. Colocar tuercas en tornillos.",
+            "47. Meter canicas en botella de boca pequeña.",
+            "48. Juego de tapas y botellas (revolver y emparejar).",
+            "49. Pegar stickers (esquema corporal).",
+            "50. Usar goteros para trasladar líquido."
+        ];
+
+        function renderMotorActivities() {
+            const container = document.getElementById('motor-list');
+            const search = document.getElementById('motor-search').value.toLowerCase();
+            container.innerHTML = '';
+            
+            const filtered = motorActivities.filter(act => act.toLowerCase().includes(search));
+            
+            if (filtered.length === 0) {
+                container.innerHTML = '<p class="text-sm text-slate-400 p-2">No se encontraron actividades.</p>';
+                return;
+            }
+            filtered.forEach(act => {
+                const div = document.createElement('div');
+                div.className = 'bg-white p-2 rounded border border-orange-100 text-sm text-slate-700 flex gap-2 items-start';
+                div.innerHTML = `<i class="fa-solid fa-check text-orange-400 mt-1"></i> <span>${act}</span>`;
+                container.appendChild(div);
+            });
+        }
+        
+        function toggleTheory() {
+            const el = document.getElementById('motor-theory');
+            if (el.classList.contains('hidden')) {
+                el.classList.remove('hidden');
+                el.classList.add('fade-in');
+            } else {
+                el.classList.add('hidden');
+            }
+        }
+        
+        function filterMotorActivities() {
+            renderMotorActivities();
+        }
+
+        // --- DATA DEL CRONOGRAMA ---
+        const scheduleData = [
+            { 
+                day: "Lunes", 
+                title: "Palabras y Contexto", 
+                icon: "fa-magnifying-glass", 
+                color: "text-green-600", 
+                bg: "bg-green-100", 
+                task1: "Detective de Palabras", 
+                task2: "Sopa de Letras",
+                targetId: "target-palabras",
+                details: {
+                    title: "🔎 Detective de Palabras Incógnitas",
+                    desc: "Ayuda a Zaid a deducir palabras por el contexto.",
+                    example: "Dile esta frase: 'Como estaba lloviendo, abrí mi [PARATUS] para no mojarme'. Pregunta: '¿Qué crees que significa Paratus?'. Respuesta esperada: Paraguas."
+                }
+            },
+            { 
+                day: "Martes", 
+                title: "Atención Visual", 
+                icon: "fa-eye", 
+                color: "text-orange-600", 
+                bg: "bg-orange-100", 
+                task1: "Laberintos de rastreo", 
+                task2: "Vuelo del Abejorro",
+                targetId: "target-atencion",
+                details: {
+                    title: "🐝 El Vuelo del Abejorro",
+                    desc: "Entrenar el seguimiento ocular sin mover la cabeza.",
+                    example: "Toma un lápiz con una pegatina llamativa. Dibuja un '8' acostado (infinito) en el aire. Zaid debe seguirlo SOLO con los ojos, sin mover la cabeza."
+                }
+            },
+            { 
+                day: "Miércoles", 
+                title: "Entorno Digital", 
+                icon: "fa-robot", 
+                color: "text-indigo-600", 
+                bg: "bg-indigo-100", 
+                task1: "Partes de la Compus", 
+                task2: "Semáforo del Tiempo",
+                targetId: "target-digital",
+                details: {
+                    title: "🤖 Anatomía de la Computadora",
+                    desc: "Desmitificar la tecnología usando su propio cuerpo.",
+                    example: "Explícale: El CPU es el cerebro (piensa). La pantalla es la cara (muestra expresiones). El mouse son las manos (toca cosas)."
+                }
+            },
+            { 
+                day: "Jueves", 
+                title: "Motricidad Fina", 
+                icon: "fa-puzzle-piece", 
+                color: "text-purple-600", 
+                bg: "bg-purple-100", 
+                task1: "Plastilina / Enhebrar", 
+                task2: "Series con Legos",
+                targetId: "target-motor",
+                details: {
+                    title: "🤏 Gimnasio de Dedos",
+                    desc: "Fortalecer los músculos para escribir mejor.",
+                    example: "Dale plastilina y pídele que haga: 1. Una serpiente muy larga. 2. Bolitas muy pequeñas usando solo dos dedos (índice y pulgar)."
+                }
+            },
+            { 
+                day: "Viernes", 
+                title: "Lectura y Lenguaje", 
+                icon: "fa-book-open", 
+                color: "text-pink-600", 
+                bg: "bg-pink-100", 
+                task1: "Lectura en Eco", 
+                task2: "Juego de Rimas",
+                targetId: "target-lecto",
+                details: {
+                    title: "🗣️ Lectura en Eco",
+                    desc: "Mejorar la fluidez y la 'música' al leer.",
+                    example: "Lee una frase de un cuento con mucha emoción: '¡Cuidado, ahí viene el lobo!'. Zaid debe repetirla imitando exactamente tu tono y velocidad."
+                }
+            },
+            { 
+                day: "Sábado", 
+                title: "Conciencia Web", 
+                icon: "fa-shield-halved", 
+                color: "text-cyan-600", 
+                bg: "bg-cyan-100", 
+                task1: "¿Verdad o Cuento?", 
+                task2: "Público vs Privado",
+                targetId: "target-digital",
+                details: {
+                    title: "🕵️ ¿Verdad o Cuento?",
+                    desc: "Fomentar el escepticismo saludable en internet.",
+                    example: "Busca una foto editada (ej. un gato volando). Pregúntale: '¿Crees que esto es real?'. Explícale que no todo lo que sale en la pantalla es verdad."
+                }
+            },
+            { 
+                day: "Domingo", 
+                title: "Descanso Cerebral", 
+                icon: "fa-couch", 
+                color: "text-yellow-600", 
+                bg: "bg-yellow-100", 
+                task1: "Lectura Libre", 
+                task2: "Día Sin Pantallas",
+                targetId: null, // No ideas needed for rest
+                details: {
+                    title: "🌳 Desconexión Total",
+                    desc: "El cerebro necesita aburrirse para ser creativo.",
+                    example: "Hoy no hay reglas de corrección. Que lea lo que quiera (cómics, revistas) solo por placer, o salgan al parque sin tablets."
+                }
+            }
+        ];
+
+        // --- JUMP FUNCTION ---
+        function jumpToBank(targetId) {
+            if(!targetId) return;
+            switchTab('banco');
+            
+            // Wait for tab switch
+            setTimeout(() => {
+                const element = document.getElementById(targetId);
+                if(element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    element.classList.add('highlight-pulse');
+                    setTimeout(() => {
+                        element.classList.remove('highlight-pulse');
+                    }, 4000);
+                }
+            }, 100);
+        }
+
+        // --- RENDERIZAR CRONOGRAMA ---
+        const container = document.getElementById('schedule-container');
+        
+        function renderSchedule() {
+            container.innerHTML = '';
+            scheduleData.forEach((day, index) => {
+                const isChecked = localStorage.getItem(`zaid_day_${index}`) === 'true';
+
+                // Botón de variantes condicional
+                const variantBtn = day.targetId ? `
+                     <button onclick="jumpToBank('${day.targetId}')" class="text-xs text-blue-500 underline ml-2 hover:text-blue-700">
+                        (¿Aburrido? Ver variantes)
+                     </button>
+                ` : '';
+
+                const cardHTML = `
+                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 relative transition hover:shadow-md ${isChecked ? 'opacity-75 bg-slate-50' : ''}">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="flex items-center gap-3">
+                            <div class="${day.bg} ${day.color} w-10 h-10 rounded-full flex items-center justify-center">
+                                <i class="fa-solid ${day.icon}"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-lg leading-none">${day.day}</h4>
+                                <p class="text-xs text-slate-500 font-semibold uppercase mt-1">${day.title}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-2 mb-4">
+                        <div class="flex flex-wrap items-center gap-2 text-sm text-slate-700 bg-slate-50 p-2 rounded">
+                            <i class="fa-regular fa-circle-check text-slate-400"></i> 
+                            <span>${day.task1}</span>
+                            ${variantBtn}
+                        </div>
+                        <div class="flex items-center gap-2 text-sm text-slate-700 bg-slate-50 p-2 rounded">
+                            <i class="fa-regular fa-circle-check text-slate-400"></i> ${day.task2}
+                        </div>
+                    </div>
+
+                    <button onclick="toggleDetails(${index})" class="w-full mb-4 text-xs font-bold text-blue-500 hover:text-blue-700 flex items-center justify-center gap-1 py-2 border border-blue-100 rounded-lg hover:bg-blue-50 transition">
+                        <i class="fa-solid fa-circle-info"></i> Ver Guía para Papás <i id="arrow-${index}" class="fa-solid fa-chevron-down transition-transform"></i>
+                    </button>
+
+                    <div id="details-${index}" class="details-content bg-blue-50 rounded-lg mb-4 text-sm border border-blue-100">
+                        <div class="p-3">
+                            <p class="font-bold text-blue-800 mb-1"><i class="fa-solid fa-star mr-1"></i> ${day.details.title}</p>
+                            <p class="text-slate-600 mb-2 leading-tight">${day.details.desc}</p>
+                            <div class="bg-white p-2 rounded border border-blue-100">
+                                <span class="text-xs font-bold text-slate-400 uppercase">Ejemplo:</span>
+                                <p class="text-slate-700 italic mt-1">"${day.details.example}"</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <label class="flex items-center cursor-pointer select-none group relative z-10">
+                        <input type="checkbox" class="check-anim sr-only" onchange="toggleDay(${index}, this)" ${isChecked ? 'checked' : ''}>
+                        <div class="w-full h-10 border-2 border-slate-200 rounded-xl flex items-center justify-center text-slate-400 font-bold transition group-hover:border-blue-300">
+                            <span class="${isChecked ? 'hidden' : 'block'}">Marcar Completado</span>
+                            <span class="${isChecked ? 'block' : 'hidden'} text-white flex items-center gap-2"><i class="fa-solid fa-check"></i> ¡Misión Cumplida!</span>
+                        </div>
+                    </label>
+                    
+                    ${isChecked ? '<div class="absolute inset-0 border-2 border-green-500 rounded-2xl pointer-events-none"></div>' : ''}
+                </div>
+                `;
+                container.innerHTML += cardHTML;
+            });
+            updateProgress();
+            loadStreak();
+        }
+
+        // --- TOGGLE DETALLES ---
+        function toggleDetails(index) {
+            const content = document.getElementById(`details-${index}`);
+            const arrow = document.getElementById(`arrow-${index}`);
+            
+            if (content.classList.contains('details-open')) {
+                content.classList.remove('details-open');
+                arrow.style.transform = 'rotate(0deg)';
+            } else {
+                content.classList.add('details-open');
+                arrow.style.transform = 'rotate(180deg)';
+            }
+        }
+
+        // --- LÓGICA DE PROGRESO ---
+        function toggleDay(index, checkbox) {
+            const isChecked = checkbox.checked;
+            localStorage.setItem(`zaid_day_${index}`, isChecked);
+            
+            if (isChecked) {
+                confetti({
+                    particleCount: 100,
+                    spread: 70,
+                    origin: { y: 0.6 },
+                    colors: ['#3b82f6', '#10b981', '#f59e0b']
+                });
+            }
+            setTimeout(() => { renderSchedule(); }, 300);
+        }
+
+        function updateProgress() {
+            let completed = 0;
+            for (let i = 0; i < 7; i++) {
+                if (localStorage.getItem(`zaid_day_${i}`) === 'true') completed++;
+            }
+            document.getElementById('progress-text').textContent = `${completed}/7 Días`;
+            
+            // Update Bar
+            const pct = (completed / 7) * 100;
+            document.getElementById('progress-bar').style.width = `${pct}%`;
+
+            // Button Logic
+            const finishBtn = document.getElementById('btn-finish-week');
+            
+            if (completed === 7) {
+                // Unlock state
+                finishBtn.disabled = false;
+                finishBtn.classList.remove('bg-gray-300', 'text-gray-500', 'cursor-not-allowed', 'shadow-none', 'border-gray-400');
+                finishBtn.classList.add('bg-yellow-400', 'text-blue-900', 'hover:bg-yellow-300', 'shadow-md', 'border-yellow-600', 'active:border-b-0', 'active:translate-y-1', 'border-b-4');
+                finishBtn.innerHTML = '<i class="fa-solid fa-trophy mr-1"></i> ¡Completar Semana!';
+            } else {
+                // Locked state
+                finishBtn.disabled = true;
+                finishBtn.classList.add('bg-gray-300', 'text-gray-500', 'cursor-not-allowed', 'shadow-none', 'border-gray-400');
+                finishBtn.classList.remove('bg-yellow-400', 'text-blue-900', 'hover:bg-yellow-300', 'shadow-md', 'border-yellow-600', 'active:border-b-0', 'active:translate-y-1');
+                 finishBtn.innerHTML = `<i class="fa-solid fa-lock mr-2"></i> ${completed}/7`;
+            }
+        }
+
+        function finishWeek() {
+            let currentLevel = parseInt(localStorage.getItem('zaid_level') || '1');
+            currentLevel++;
+            localStorage.setItem('zaid_level', currentLevel);
+            
+            // Big Celebration
+            var end = Date.now() + (2 * 1000);
+            var colors = ['#bb0000', '#ffffff'];
+            (function frame() {
+              confetti({
+                particleCount: 2,
+                angle: 60,
+                spread: 55,
+                origin: { x: 0 },
+                colors: colors
+              });
+              confetti({
+                particleCount: 2,
+                angle: 120,
+                spread: 55,
+                origin: { x: 1 },
+                colors: colors
+              });
+              if (Date.now() < end) {
+                requestAnimationFrame(frame);
+              }
+            }());
+
+            // Clear days
+            for(let i=0; i<7; i++) localStorage.removeItem(`zaid_day_${i}`);
+            
+            alert(`¡Felicidades Equipo! Han subido al Nivel ${currentLevel}. \nAhora el cronograma se ha reiniciado. ¡Usen el Banco de Ideas para nuevas actividades esta semana!`);
+            
+            renderSchedule();
+        }
+
+        function loadStreak() {
+            let currentLevel = localStorage.getItem('zaid_level') || '1';
+            document.getElementById('level-badge').textContent = `🏆 Nivel ${currentLevel}`;
+        }
+
+        function resetProgress() {
+            if(confirm("¿Seguro? Esto borrará el progreso de ESTA semana (no el Nivel).")) {
+                for(let i=0; i<7; i++) localStorage.removeItem(`zaid_day_${i}`);
+                renderSchedule();
+            }
+        }
+
+        // --- NAVEGACIÓN ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => {
+                el.classList.add('hidden');
+                el.classList.remove('block', 'animate-fade-in');
+            });
+            
+            const selected = document.getElementById(tabId);
+            selected.classList.remove('hidden');
+            selected.classList.add('block', 'animate-fade-in');
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('nav-active', 'bg-white', 'text-blue-600', 'shadow-md');
+                btn.classList.add('bg-blue-100', 'text-blue-600');
+            });
+            const activeBtn = document.getElementById(`btn-${tabId}`);
+            if (activeBtn) {
+                activeBtn.classList.add('nav-active');
+                activeBtn.classList.remove('bg-blue-100');
+            }
+        }
+
+        // Init
+        renderSchedule();
+        renderMotorActivities();
+
+    </script>
+</body>
+</html>
